@@ -149,7 +149,6 @@ class WiziqConference < WebConference
       Rails::logger.debug " agcom pr url is  #{ schedule_response_hash.inspect }"
 
       true
-
     rescue => e
 
       Rails::logger.debug " initiate_conference rescue  #{ e.inspect }"
