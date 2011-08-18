@@ -22,9 +22,6 @@ class AgliveComUtil
   end
 
 
- 
-
-
   def schedule_class(wiziq_conference)
 
     Rails::logger.debug " self is #{ self.to_s }"
