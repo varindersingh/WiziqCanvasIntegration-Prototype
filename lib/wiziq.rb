@@ -17,5 +17,6 @@ Rails.configuration.to_prepare do
   require_dependency 'attendee_util'
   require_dependency 'wiziq_conference'
   require_dependency 'web_conference'
- 
+  
+
 end

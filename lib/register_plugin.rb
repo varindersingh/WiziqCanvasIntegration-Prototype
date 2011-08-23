@@ -13,9 +13,7 @@ Canvas::Plugin.register('wiziq', :web_conferencing, {
                 :api_url => 'http://classapi.wiztest.authordm.com/apimanager.ashx',
                 :access_key => 'kndxlmt3RJw=',
                 :secret_key => 'XxLzvbPUE2D/DFY5osT/6g=='
-
     }
-
 })
 
 Rails::logger.debug "Done registering wiziq plugin........................."

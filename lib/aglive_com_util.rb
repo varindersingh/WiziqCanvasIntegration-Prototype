@@ -3,58 +3,62 @@
 
 #require 'wiziq_api_constants'
 
-require 'hpricot'
-#require 'wiziq_api_constants'
-# Test comment
+require 'canvas'
+require 'wiziq'
 
-class AgliveComUtil
+include WiziqApiConstants
 
 
+class AgliveComUtil 
+  
   attr_reader :api_request,:api_method,:attendee_url
 
   def initialize(api_method)
 
-    Rails::logger.debug "AgliveComUtil initialize here"
+    Rails::logger.debug "AgliveComUtil initialize here. Method is #{ api_method }"
     
-    raise 'Unrecognized api_method' if api_method.kind_of?(WiziqApiConstants::ApiMethods)
+    #raise 'Unrecognized api_method' if
     @api_method = api_method
-    @api_request = BaseRequestBuilder.new(api_method)    
-    
+    @api_request = nil
+    @api_request = BaseRequestBuilder.new(api_method)
+    Rails::logger.debug "AgliveComUtil init. path url is #{ @api_request.api_url  } "
+
   end
 
 
   def schedule_class(wiziq_conference)
-
+    
     Rails::logger.debug " self is #{ self.to_s }"
 
     @api_request.add_params(
 
-      "title" => wiziq_conference.title,
-      "start_time" =>  Time.now.strftime("%m/%d/%Y %H:%M:%S %p"),
-      "description" => wiziq_conference.description,
-      "duration" => wiziq_conference.duration,
-      "time_zone" => wiziq_conference.time_zone,
-      "presenter_id" => wiziq_conference.user.uuid,
-      "presenter_email" => "vicky98284@gmail.com",
-      "presenter_name" => wiziq_conference.user.name,
-      "presenter_default_controls" => "audio,video"
+      ParamsSchedule::TITLE => wiziq_conference.title,      
+      ParamsSchedule::START_DATETIME  =>  Time.now.strftime("%m/%d/%Y %H:%M:%S %p"),
+      ParamsSchedule::DESCRIPTION => wiziq_conference.description,
+      ParamsSchedule::DURATION => wiziq_conference.duration,
+      ParamsSchedule::COURSE_ID => wiziq_conference.context_id,
+      ParamsSchedule::TIMEZONE => wiziq_conference.time_zone,
+      ParamsSchedule::PRESENTER_ID => wiziq_conference.user.uuid,
+      ParamsSchedule::PRESENTER_NAME => wiziq_conference.user.name,
+      ParamsSchedule::PRESENTER_CONTROL_TYPE => "audio,video"
+      #"attendee_default_controls" => "audio"
     )   
 
     response_data  = ResponseData.new(@api_request.send_api_request);
-
     response_data.parse_schedule_class_response    
    
   end
 
   def add_attendee_to_session(class_id,attendee_id,screen_name)
 
+    
     attendee_util = AttendeeUtil.new
     attendee_util.add_attendee(attendee_id, screen_name)
 
     @api_request.add_params(
         
-      "class_id" => class_id,
-      "attendee_list" => attendee_util.get_attendee_xml    
+      ParamsAddAttendee::CLASS_ID => class_id,
+      ParamsAddAttendee::ATTENDEE_XML => attendee_util.get_attendee_xml
     )
 
     response_data = ResponseData.new(@api_request.send_api_request)
@@ -63,41 +67,35 @@ class AgliveComUtil
     
   end
 
-
   def get_wiziq_class_status(class_id)
-
-    @api_request.add_param(WiziqApiConstants::ParamsList::CLASS_ID, class_id)
-    @api_request.add_param(WiziqApiConstants::ParamsList::STATUS, WiziqApiConstants::ClassStatus::UPCOMING)
-    @api_request.add_param(WiziqApiConstants::ParamsList::COLUMNS, WiziqApiConstants::ListColumnOptions::TIME_TO_START)
-    response_data = ResponseData.new(@api_request.send_api_request)
-    response_data.optional_params = WiziqApiConstants::ListColumnOptions::TIME_TO_START
-    response_data.parse_class_info
+       
+    get_class_info(class_id, [ListColumnOptions::STATUS,ListColumnOptions::TIME_TO_START])
     
   end
 
-  def get_class_presenter_info(class_id,optional_colums={})
-
+  def get_class_presenter_info(class_id)
     
-    @api_request.add_param(WiziqApiConstants::ParamsList::CLASS_ID, class_id)
-    @api_request.add_param(WiziqApiConstants::ParamsList::COLUMNS, optional_colums.join(","))
+    get_class_info(class_id, [ListColumnOptions::PRESENTER_URL])
+
+  end
+
+  def get_class_attendee_info(class_id)
+
+    get_class_info(class_id, [ListColumnOptions::ATTENDEE_URL])
+
+  end
+
+  def get_class_info(class_id,columns=[])
+    
+    @api_request.add_param(ParamsList::CLASS_ID,class_id)        
+    @api_request.add_param(ParamsList::COLUMNS, columns.join(",")) if !columns.blank?
     response_data = ResponseData.new(@api_request.send_api_request)
-    Rails::logger.debug "   agliveinfo get presenter info "
-    response_data.optional_params = optional_colums
+    response_data.optional_params = columns
     response_data.parse_class_info
 
   end
 
-  def get_class_attendee_info(class_id,optional_colums={})
-
-    @api_request.add_param(WiziqApiConstants::ParamsList::CLASS_ID, class_id)
-    @api_request.add_param(WiziqApiConstants::ParamsList::COLUMNS, optional_colums.join(","))
-    response_data = ResponseData.new(@api_request.send_api_request)
-    Rails::logger.debug "   agliveinfo get attendee info "
-    response_data.optional_params = optional_colums
-    response_data.parse_class_info
-
-  end
-
+  private :get_class_info
   
 
 end

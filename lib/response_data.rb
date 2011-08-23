@@ -7,6 +7,8 @@ require 'rexml/document'
 
 class ResponseData
 
+  include WiziqApiConstants::ResponseNodes 
+
   attr_reader :doc_root,:api_method,:api_msg,:api_code,:api_status
   attr_accessor :optional_params
   def initialize(response_xml)
@@ -16,9 +18,11 @@ class ResponseData
     @doc_root = res_doc.root
     raise 'Invalid api response' if @doc_root.blank?
     @api_status = @doc_root.attributes["status"]
-    @api_method = @doc_root.elements["method"].text if !@doc_root.elements["method"].blank?  
-    @api_msg = @doc_root.elements["error"].attributes["msg"] if !@doc_root.elements["error"].blank?
-    @api_code = @doc_root.elements["error"].attributes["code"] if !@doc_root.elements["error"].blank?
+    @api_method = @doc_root.elements["method/text()"]
+    @api_msg = @doc_root.elements["error/@msg"] 
+    @api_code = @doc_root.elements["error/@code"]
+    Rails::logger.debug " api method is  #{ @api_method }"
+    
 
   end  
 
@@ -29,40 +33,33 @@ class ResponseData
 
     hash = Hash.new
     
-    class_id = @doc_root.elements["//class_id"].text
-    hash.store("class_id",class_id)
-    recording_url = @doc_root.elements["//recording_url"].text
-    hash.store("recording_url",recording_url)
+    class_id = @doc_root.elements["//"+Schedule::CLASS_ID].text
+    hash.store(Schedule::CLASS_ID,class_id)
+    recording_url = @doc_root.elements["//" + Schedule::RECORDING_URL].text
+    hash.store(Schedule::RECORDING_URL,recording_url)
     presenters = []
-    @doc_root.elements["//presenter"].each do |presenter|
+    @doc_root.elements["//" + Schedule::PRESENTER].each do |presenter|
       
-      next if presenter.type == REXML::Text      
-      
-      Rails::logger.debug " presenter is #{ presenter.to_s } "
-      Rails::logger.debug " presenter[//pr_id] is #{ presenter.elements['//presenter_id'].text }  "
-      Rails::logger.debug " presenter[//pr_url] is #{ presenter.elements['//presenter_url'].text }  "
-      
+      next if presenter.type == REXML::Text           
       presenters << Hash[
-        "presenter_url",presenter.elements["//presenter_url"].text,
-        "presenter_id",presenter.elements["//presenter_id"].text
+        Schedule::PRESENTER_URL, presenter.elements["//" + Schedule::PRESENTER_URL].text,
+        Schedule::PRESENTER_ID, presenter.elements["//" + Schedule::PRESENTER_ID].text
       ]
 
     end        
     hash.store("presenters",presenters)
-
     hash    
-
   end
 
 
   def parse_add_attendee_response
 
     hash = Hash.new
-    class_id = @doc_root.elements["//class_id"].text
-    hash.store("class_id",class_id)   
-    hash.store("attendee_id", @doc_root.elements["//attendee_id"].text)
-    hash.store("attendee_url", @doc_root.elements["//attendee_url"].text)
-    hash.store("language" , @doc_root.elements["//language"].text)        
+    class_id = @doc_root.elements["//" + AddAttendee::CLASS_ID].text
+    hash.store(AddAttendee::CLASS_ID,class_id)
+    hash.store(AddAttendee::ATTENDEE_ID, @doc_root.elements["//" + AddAttendee::ATTENDEE_ID].text)
+    hash.store(AddAttendee::ATTENDEE_URL, @doc_root.elements["//" + AddAttendee::ATTENDEE_URL].text)
+    hash.store(AddAttendee::LANGUAGE , @doc_root.elements["//" + AddAttendee::LANGUAGE].text)
     hash
 
   end

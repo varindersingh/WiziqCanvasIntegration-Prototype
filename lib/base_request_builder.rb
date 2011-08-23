@@ -1,24 +1,18 @@
 
 
-#module Com
-#  module Wiziq
-#    module ApiUtils
-      
+
 class BaseRequestBuilder
 
-  attr_reader :api_method,:api_url
-  attr_accessor :params_hash
+  include WiziqApiConstants
+
+  attr_reader :api_method,:api_url,:params_hash
 
   def initialize(api_method)
     
-
     @api_method = api_method
     @params_hash = get_auth_params
     
-
-  end
-
-  Rails::logger.debug "Entered BaseRequestBuilder----------------------------------------------"
+  end  
 
   def get_auth_params
 
@@ -31,24 +25,21 @@ class BaseRequestBuilder
     plugin = Canvas::Plugin.find(:wiziq)
     access_key = plugin.settings[:access_key]
     secret_key = plugin.settings[:secret_key]
-    @api_url = plugin.settings[:api_url] << %{?method=} << @api_method
+    @api_url = plugin.settings[:api_url]    
 
-    Rails::logger.debug " readdddd #{ Canvas::Plugin.find(:wiziq).settings.class }"
-    
-   
-    # this account  has 3 simultaneous classes limit
-    #access_key = "iDjoKEZ/1Hs="
-    #ecret_key = "eeAe2rcBwkcIQoMreoaK/w=="
+    Rails::logger.debug " get_auth_params #{ @api_url }"
 
-    #@api_url = 'http://classapi.wiztest.authordm.com/apimanager.ashx?method=' + @api_method
+    @api_url.concat %{?#{ ParamsAuth::METHOD }=} + @api_method   
+
+    Rails::logger.debug " readdddd #{ Canvas::Plugin.find(:wiziq).settings.class }"      
 
     time_stamp = get_unix_timestamp
 
     crypto_helper = CryptoHelper.new
 
-    crypto_helper.add_param("access_key", access_key)
-    crypto_helper.add_param("timestamp", time_stamp)
-    signature_base = crypto_helper.add_param("method", @api_method)
+    crypto_helper.add_param(ParamsAuth::ACCESS_KEY, access_key)
+    crypto_helper.add_param(ParamsAuth::TIMESTAMP, time_stamp)
+    signature_base = crypto_helper.add_param(ParamsAuth::METHOD, @api_method)
 
     auth_base =  AuthBase.new(secret_key,signature_base)
 
@@ -56,17 +47,16 @@ class BaseRequestBuilder
           
     common_post_params = {
 
-      "access_key" => access_key,
-      "timestamp"  => time_stamp,
-      "signature"  => signature
+      ParamsAuth::ACCESS_KEY => access_key,
+      ParamsAuth::TIMESTAMP  => time_stamp,
+      ParamsAuth::SIGNATURE  => signature
     }
 
     common_post_params
 
   end
 
-
-  def add_params(params=[])
+  def add_params(params={})
           
     @params_hash = @params_hash.merge! params
 
@@ -81,13 +71,11 @@ class BaseRequestBuilder
 
   def send_api_request
 
-
     @params_hash.each do |key,val|
 
       Rails::logger.debug "param  #{ key } =>  #{ val }"
 
     end
-
 
     raise 'api_url is should not be empty' if @api_url.blank?
 
@@ -109,9 +97,6 @@ class BaseRequestBuilder
 
     Rails::logger.debug "Request path is ==   #{req.path} ************************************************"
 
-    Rails::logger.debug "\r\n********************************************* \r\n ******************************************"
-    Rails::logger.debug "\r\n   ------------------------------------------------------ "
-
     req.body.each do |key|
 
       Rails::logger.debug "\r\n #{key} = #{req.body[key]} ***********************************************************************"
@@ -121,12 +106,11 @@ class BaseRequestBuilder
     req.each do |key,value|
       Rails::logger.debug "  #{key} = #{value} "
     end
-    Rails::logger.debug "response headers ******************************************************************************"
+   
     res.each_header do |key,value|
       Rails::logger.debug "  #{key} = #{value} "
     end
-    Rails::logger.debug "Request object is #{req.to_hash}"
-    Rails::logger.debug "Response object is #{res}"
+    Rails::logger.debug "Request object is #{req.to_hash}"    
 
 
     case res
@@ -147,9 +131,5 @@ class BaseRequestBuilder
   end
   
   private :get_auth_params, :get_unix_timestamp
-
       
 end
-#    end
-#  end
-#end

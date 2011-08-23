@@ -2,20 +2,18 @@
 # and open the template in the editor.
 
 require 'canvas'
-require  'wiziq'
+require 'wiziq'
 require 'web_conference'
 
+include WiziqApiConstants
 
 class WiziqConference < WebConference
 
   attr_reader :time_zone,:attendee_url,:presenter_url
-  attr_accessor :flash_notice
 
   def admin_join_url(user, return_to="http://www.instructure.com")
-
-    logger.debug 'WiziqConference # admin_join_url entered'
+    
     join_wiziq_conference
-    self.flash_notice = "There was an error adding attendee to sessionggggg"
     @presenter_url
 
   end
@@ -24,25 +22,23 @@ class WiziqConference < WebConference
 
     logger.debug 'WiziqConference # participant_join_url entered'
     join_wiziq_conference_as_attendee(user)
+    
   end
 
   def conference_status
-    # get class status from API
-    # return :active  or :closed
 
     logger.debug 'wiziq_conference  getting conerence status'
     logger.debug " self.conference_key is = #{ self.conference_key }"
 
-    aglive_com = AgliveComUtil.new(WiziqApiConstants::ApiMethods::LIST)
+    aglive_com = AgliveComUtil.new(ApiMethods::LIST)
     begin
 
       class_status = aglive_com.get_wiziq_class_status(self.conference_key)
-      return :active if class_status["time_to_start"] == "-1"
-
+      return :active if class_status["time_to_start"] == "-1" and class_status["status"] == 'upcoming'
+      return :closed
     rescue
       :closed
     end
-
 
   end
 
@@ -62,7 +58,7 @@ class WiziqConference < WebConference
   #    API in this case and status must be 'closed'
   #
   # 2. To force launch of wiziq class as admin even if class status is active
-  #    In other class presenter can always relaunch class as presenter
+  #    In other words class presenter can always relaunch class as presenter
 
 
   def craft_url(user=nil,session=nil,return_to="http://www.instructure.com")
@@ -81,12 +77,12 @@ class WiziqConference < WebConference
 
     begin
 
-      aglive_com = AgliveComUtil.new(WiziqApiConstants::ApiMethods::ADDATTENDEE)
+      aglive_com = AgliveComUtil.new(ApiMethods::ADDATTENDEE)
       add_attendee_hash = aglive_com.add_attendee_to_session(self.conference_key, user.uuid, user.name)
       add_attendee_hash["attendee_url"]
 
     rescue => e
-      self.flash_notice = "There was an error adding attendee to session"
+      #self.flash_notice = "There was an error adding attendee to session"
       Rails::logger.debug "Error adding attendee #{ e.inspect }"
     end
 
@@ -96,13 +92,13 @@ class WiziqConference < WebConference
 
     logger.debug "Entered get_class_presenter_info"
 
-    return if !@presenter_url.blank? 
+    return if !@presenter_url.blank?
 
-    Rails::logger.debug " Getting info already scheduled class get_class_presenter_info entered "    
+    Rails::logger.debug " Getting info already scheduled class get_class_presenter_info #{ self.conference_key } "
 
-    aglive_com = AgliveComUtil.new(WiziqApiConstants::ApiMethods::LIST)
-    options = ["class_id","presenter_url"]
-    class_presenter_info = aglive_com.get_class_presenter_info(self.conference_key,options)
+
+    aglive_com = AgliveComUtil.new(ApiMethods::LIST)
+    class_presenter_info = aglive_com.get_class_presenter_info(self.conference_key)
     @presenter_url = class_presenter_info["presenter_url"]
 
   end
@@ -117,12 +113,10 @@ class WiziqConference < WebConference
 
     Rails::logger.debug " Getting attendee info already scheduled class  "
 
-    aglive_com = AgliveComUtil.new(WiziqApiConstants::ApiMethods::LIST)
-    options = ["class_id","attendee_url"]
-    class_attendee_info = aglive_com.get_class_attendee_info(self.conference_key,options)
-    return false if !class_attendee_info
+    aglive_com = AgliveComUtil.new(ApiMethods::LIST)
+    class_attendee_info = aglive_com.get_class_attendee_info(self.conference_key)
+    return false if class_attendee_info.blank?
     class_attendee_info["attendee_url"]
-
 
   end
 
@@ -134,7 +128,7 @@ class WiziqConference < WebConference
 
     begin
 
-      aglive_com = AgliveComUtil.new(WiziqApiConstants::ApiMethods::SCHEDULE)
+      aglive_com = AgliveComUtil.new(ApiMethods::SCHEDULE)
 
       logger.debug " got instance of aglive_com #{  aglive_com }  self.class in initial is #{ self }"
 
@@ -147,7 +141,7 @@ class WiziqConference < WebConference
       save
 
       Rails::logger.debug " agcom pr url is  #{ schedule_response_hash.inspect }"
-
+        
       true
     rescue => e
 
@@ -156,11 +150,9 @@ class WiziqConference < WebConference
       false
     end
 
-
   end
-
 
   private :add_attendee_to_wiziq_session,:join_wiziq_conference
 
-
 end
+

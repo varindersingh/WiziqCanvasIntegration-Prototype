@@ -1,11 +1,12 @@
 
 module WiziqApiConstants
-
+  
   module ParamsAuth
 
     TIMESTAMP = "timestamp"
 		ACCESS_KEY = "access_key"
 		SIGNATURE = "signature"
+    METHOD = "method"
     
   end
 
@@ -65,14 +66,12 @@ module WiziqApiConstants
 		PAGE_SIZE = "page_size"
 		STATUS = "status"
 		SORT_COLUMN = "sort_by"
-		SORT_DIRECTION = "sort_direction"
-		CLASS_ID = "class_id"
-		PRESENTER_ID = "presenter_id"
-		COURSE_ID = "course_id"
+		SORT_DIRECTION = "sort_direction"					
 		ATTENDEE_ID = "attendee_id"
 		COLUMNS = "columns"
 
   end
+
 
   module ListColumnOptions
 
@@ -102,29 +101,62 @@ module WiziqApiConstants
 
   end
 
+  module ParamsAddAttendee
+
+    ATTENDEE_URL = "attendee_url"
+    ATTENDEE_XML = "attendee_list"
+    ATTENDEE_ID = "attendee_id"
+    LANGUAGE = "language"
+    CLASS_ID = "class_id"
+
+  end
+
   module ClassStatus
 
     UPCOMING = "upcoming"
     EXPIRED = "expired"
     COMPLETED = "completed"
-
-  end
-
-  module  ParamsUpdate
-
-
-  end
-
-  module ParamsCancel
-
     
   end
 
   module ResponseNodes
 
-    
+    module FAILURE
+      STATUS = "status"
+      ERR = "error"
+      ERR_MSG = "msg"      
+      ERR_CODE = "code"
+
+    end
+
+    module Schedule
+
+      PRESENTER = "presenter"
+      PRESENTER_URL = "presenter_url"
+      PRESENTER_EMAIL = "presenter_email"
+      PRESENTER_ID = "presenter_id"
+      RECORDING_URL = "recording_url"
+      CLASS_ID = "class_id"     
+
+    end
+    module AddAttendee
+
+      ATTENDEE_URL = "attendee_url"
+      ATTENDEE_ID = "attendee_id"
+      LANGUAGE = "language"
+      CLASS_ID = "class_id"
+      
+    end
+   
+
   end
 
+  # Reserved for future implementation 
 
+  module  ParamsUpdate;end
 
+  module ParamsCancel;end
+      
+
+  
 end
